@@ -101,7 +101,7 @@ rlpDeserialize::B.ByteString->RLPObject
 rlpDeserialize s = 
   case rlpSplit $ B.unpack s of
     (o, []) -> o
-    _ -> error ("parse error converting ByteString to an RLP Object: " ++ show s)
+    _ -> error ("parse error converting ByteString to an RLP Object: " ++ show (B.unpack s))
 
 
 rlpSerialize::RLPObject->B.ByteString
@@ -124,7 +124,7 @@ instance RLPSerializable String where
   rlpDecode (RLPArray _) = error "Malformed RLP in call to rlpDecode for String: RLPObject is an array."
 
 instance RLPSerializable B.ByteString where
-    rlpEncode s = RLPString $ BC.unpack s
+    rlpEncode s = rlpEncode $ BC.unpack s
       
     rlpDecode (RLPScalar x) = B.singleton x
     rlpDecode (RLPString s) = BC.pack s
