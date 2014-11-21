@@ -19,8 +19,6 @@ import Numeric
 
 import Util
 
---import Debug.Trace
-
 data RLPObject = RLPScalar Word8 | RLPString String | RLPArray [RLPObject] deriving (Show, Eq, Ord)
 
 class RLPSerializable a where
@@ -85,13 +83,12 @@ int2Bytes val | val < 65536 =
 int2Bytes _ = error "int2Bytes not defined for val > 65535."
 
 rlp2Bytes::RLPObject->[Word8]
---rlp2Bytes (RLPNumber 0) = [0x80]
 rlp2Bytes (RLPScalar val) = [fromIntegral val]
 rlp2Bytes (RLPString s) | length s <= 55 = (0x80 + fromIntegral (length s):(c2w <$> s))
-rlp2Bytes (RLPString s) | length s < 65536 =
-  [0xB7 + fromIntegral (length bytes)] ++ bytes ++ (c2w <$> s)
+rlp2Bytes (RLPString s) =
+  [0xB7 + fromIntegral (length lengthAsBytes)] ++ lengthAsBytes ++ (c2w <$> s)
   where
-    bytes = int2Bytes $ length s
+    lengthAsBytes = int2Bytes $ length s
 rlp2Bytes (RLPArray innerObjects) =
   if length innerBytes <= 55
   then (0xC0 + fromIntegral (length innerBytes):innerBytes)
@@ -99,7 +96,6 @@ rlp2Bytes (RLPArray innerObjects) =
        in [0xF7 + fromIntegral (length lenBytes)] ++ lenBytes ++ innerBytes
   where
     innerBytes = concat $ rlp2Bytes <$> innerObjects
-rlp2Bytes obj = error ("Missing case in rlp2Bytes: " ++ show obj)
 
 rlpDeserialize::B.ByteString->RLPObject
 rlpDeserialize s = 
