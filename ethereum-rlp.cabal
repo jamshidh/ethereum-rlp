@@ -28,8 +28,11 @@ library
                  , bytestring
                  , base16-bytestring
                  , haskoin
+                 , wl-pprint
     exposed-modules:
                    Data.RLP
+    other-modules:
+                   Util
     ghc-options: -Wall
     buildable: True
     hs-source-dirs: src

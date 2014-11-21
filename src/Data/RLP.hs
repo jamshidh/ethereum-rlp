@@ -9,10 +9,13 @@ module Data.RLP (
 
 import Data.Bits
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Char8 as BC
 import Data.ByteString.Internal
 import Data.Functor
 import Data.Word
+import Text.PrettyPrint.Leijen hiding ((<$>))
+import Numeric
 
 import Util
 
@@ -23,6 +26,15 @@ data RLPObject = RLPScalar Word8 | RLPString String | RLPArray [RLPObject] deriv
 class RLPSerializable a where
   rlpDecode::RLPObject->a
   rlpEncode::a->RLPObject
+
+
+instance Pretty RLPObject where
+  pretty (RLPArray objects) =
+    encloseSep (text "[") (text "]") comma $ pretty <$> objects
+  pretty (RLPScalar n) = text $ "0x" ++ showHex n ""
+  pretty (RLPString s) = text $ "0x" ++ (BC.unpack $ B16.encode $ BC.pack s)
+
+
 
 splitAtWithError::Int->[a]->([a], [a])
 splitAtWithError n arr | n > length arr = error "splitAtWithError called with n > length arr"
