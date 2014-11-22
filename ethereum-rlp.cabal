@@ -28,7 +28,7 @@ library
                  , bytestring
                  , base16-bytestring
                  , haskoin
-                 , wl-pprint
+                 , ansi-wl-pprint
     exposed-modules:
                    Data.RLP
     other-modules:
@@ -46,7 +46,7 @@ Test-Suite test-rlp
                     , bytestring
                     , base16-bytestring
                     , haskoin
-                    , wl-pprint
+                    , ansi-wl-pprint
                     , test-framework
                     , test-framework-hunit
                     , HUnit

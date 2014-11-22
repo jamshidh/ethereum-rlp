@@ -14,7 +14,7 @@ import qualified Data.ByteString.Char8 as BC
 import Data.ByteString.Internal
 import Data.Functor
 import Data.Word
-import Text.PrettyPrint.Leijen hiding ((<$>))
+import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
 import Numeric
 
 import Util
