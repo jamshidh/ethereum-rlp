@@ -28,7 +28,7 @@ class RLPSerializable a where
 
 instance Pretty RLPObject where
   pretty (RLPArray objects) =
-    encloseSep (text "[") (text "]") comma $ pretty <$> objects
+    encloseSep (text "[") (text "]") (text ", ") $ pretty <$> objects
   pretty (RLPScalar n) = text $ "0x" ++ showHex n ""
   pretty (RLPString s) = text $ "0x" ++ (BC.unpack $ B16.encode $ BC.pack s)
 
