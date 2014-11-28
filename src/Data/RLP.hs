@@ -30,7 +30,7 @@ instance Pretty RLPObject where
   pretty (RLPArray objects) =
     encloseSep (text "[") (text "]") (text ", ") $ pretty <$> objects
   pretty (RLPScalar n) = text $ "0x" ++ showHex n ""
-  pretty (RLPString s) = text $ "0x" ++ (BC.unpack $ B16.encode $ BC.pack s)
+  pretty (RLPString s) = text $ "0x" ++ BC.unpack (B16.encode $ BC.pack s)
 
 
 
@@ -53,7 +53,7 @@ rlpSplit (x:len:rest) | x > 247 && x < 249 =
 rlpSplit (249:len1:len2:rest) =
   (RLPArray $ getRLPObjects arrayData, nextRest)
   where
-    len = (fromIntegral len1) `shift` 8 + fromIntegral len2
+    len = fromIntegral len1 `shift` 8 + fromIntegral len2
     (arrayData, nextRest) = splitAtWithError len rest
 rlpSplit (x:rest) | x >= 128 && x <= 128+55 =
   (RLPString $ w2c <$> strList, nextRest)
@@ -84,14 +84,14 @@ int2Bytes _ = error "int2Bytes not defined for val > 65535."
 
 rlp2Bytes::RLPObject->[Word8]
 rlp2Bytes (RLPScalar val) = [fromIntegral val]
-rlp2Bytes (RLPString s) | length s <= 55 = (0x80 + fromIntegral (length s):(c2w <$> s))
+rlp2Bytes (RLPString s) | length s <= 55 = 0x80 + fromIntegral (length s):(c2w <$> s)
 rlp2Bytes (RLPString s) =
   [0xB7 + fromIntegral (length lengthAsBytes)] ++ lengthAsBytes ++ (c2w <$> s)
   where
     lengthAsBytes = int2Bytes $ length s
 rlp2Bytes (RLPArray innerObjects) =
   if length innerBytes <= 55
-  then (0xC0 + fromIntegral (length innerBytes):innerBytes)
+  then 0xC0 + fromIntegral (length innerBytes):innerBytes
   else let lenBytes = int2Bytes $ length innerBytes
        in [0xF7 + fromIntegral (length lenBytes)] ++ lenBytes ++ innerBytes
   where
