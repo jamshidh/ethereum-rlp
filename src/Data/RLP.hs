@@ -1,5 +1,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 
+-- | The RLP module provides a framework within which serializers can be built, described in the Ethereum Yellowpaper (<http://gavwood.com/paper.pdf>).
+--
+-- The 'RLPObject' is an intermediate data container, whose serialization rules are well defined.  By creating code that converts from a
+-- given type to an 'RLPObject', full serialization will be specified.  The 'RLPSerializable' class provides functions to do this conversion.
+
 module Data.RLP (
   RLPObject(..),
   RLPSerializable(..),
@@ -19,8 +24,14 @@ import Numeric
 
 import Util
 
+-- | An internal representation of generic data, with no type information.
+--
+-- End users will not need to directly create objects of this type (an 'RLPObject' can be created using 'rlpEncode'),
+-- however the designer of a new type will need to create conversion code by making their type an instance 
+-- of the RLPSerializable class. 
 data RLPObject = RLPScalar Word8 | RLPString String | RLPArray [RLPObject] deriving (Show, Eq, Ord)
 
+-- | Converts objects to and from 'RLPObject's.
 class RLPSerializable a where
   rlpDecode::RLPObject->a
   rlpEncode::a->RLPObject
@@ -97,6 +108,11 @@ rlp2Bytes (RLPArray innerObjects) =
   where
     innerBytes = concat $ rlp2Bytes <$> innerObjects
 
+--TODO- Probably should just use Data.Binary's 'Binary' class for this
+
+-- | Converts bytes to 'RLPObject's.
+--
+-- Full deserialization of an object can be obtained using @rlpDecode . rlpDeserialize@.
 rlpDeserialize::B.ByteString->RLPObject
 rlpDeserialize s = 
   case rlpSplit $ B.unpack s of
@@ -104,6 +120,9 @@ rlpDeserialize s =
     _ -> error ("parse error converting ByteString to an RLP Object: " ++ show (B.unpack s))
 
 
+-- | Converts 'RLPObject's to bytes.
+--
+-- Full serialization of an object can be obtained using @rlpSerialize . rlpEncode@.
 rlpSerialize::RLPObject->B.ByteString
 rlpSerialize o = B.pack $ rlp2Bytes o
 
