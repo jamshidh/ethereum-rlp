@@ -140,7 +140,7 @@ instance RLPSerializable String where
   rlpEncode s = RLPString s
   rlpDecode (RLPString s) = s
   rlpDecode (RLPScalar n) = [w2c $ fromIntegral n]
-  rlpDecode (RLPArray _) = error "Malformed RLP in call to rlpDecode for String: RLPObject is an array."
+  rlpDecode (RLPArray x) = error $ "Malformed RLP in call to rlpDecode for String: RLPObject is an array: " ++ show (pretty x)
 
 instance RLPSerializable B.ByteString where
     rlpEncode s = rlpEncode $ BC.unpack s
