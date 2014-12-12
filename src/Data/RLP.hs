@@ -49,6 +49,9 @@ splitAtWithError::Int->[a]->([a], [a])
 splitAtWithError n arr | n > length arr = error "splitAtWithError called with n > length arr"
 splitAtWithError n arr = splitAt n arr
 
+getLength::Int->[Word8]->(Integer, [Word8])
+getLength sizeOfLength bytes = (bytes2Integer $ take sizeOfLength bytes, drop sizeOfLength bytes)
+
 rlpSplit::[Word8]->(RLPObject, [Word8])
 rlpSplit (x:rest) | x >= 192 && x <= 192+55 =
   (RLPArray $ getRLPObjects arrayData, nextRest)
@@ -56,11 +59,11 @@ rlpSplit (x:rest) | x >= 192 && x <= 192+55 =
     dataLength::Word8
     dataLength = x - 192
     (arrayData, nextRest) = splitAtWithError (fromIntegral dataLength) rest
-rlpSplit (x:len:rest) | x > 247 && x < 249 =
+rlpSplit (x:rest) | x >= 0xF8 && x <= 0xFF =
   (RLPArray $ getRLPObjects arrayData, nextRest)
   where
-    dataLength = len
-    (arrayData, nextRest) = splitAtWithError (fromIntegral dataLength) rest
+    (arrLength, restAfterLen) = getLength (fromIntegral x - 0xF7) rest
+    (arrayData, nextRest) = splitAtWithError (fromIntegral arrLength) restAfterLen
 rlpSplit (249:len1:len2:rest) =
   (RLPArray $ getRLPObjects arrayData, nextRest)
   where
@@ -71,11 +74,11 @@ rlpSplit (x:rest) | x >= 128 && x <= 128+55 =
   where
     strLength = x-128
     (strList, nextRest) = splitAtWithError (fromIntegral strLength) rest
-rlpSplit (x:len:rest) | x >= 183 && x <= 184 =
+rlpSplit (x:rest) | x >= 0xB8 && x <= 0xBF =
   (RLPString $ w2c <$> strList, nextRest)
   where
-    strLength = len
-    (strList, nextRest) = splitAtWithError (fromIntegral strLength) rest
+    (strLength, restAfterLen) = getLength (fromIntegral x - 0xB7) rest
+    (strList, nextRest) = splitAtWithError (fromIntegral strLength) restAfterLen
 rlpSplit (x:rest) | x < 128 =
   (RLPScalar x, rest)
 rlpSplit x = error ("Missing case in rlpSplit: " ++ show (B.pack x))
