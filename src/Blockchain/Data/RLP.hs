@@ -5,7 +5,7 @@
 -- The 'RLPObject' is an intermediate data container, whose serialization rules are well defined.  By creating code that converts from a
 -- given type to an 'RLPObject', full serialization will be specified.  The 'RLPSerializable' class provides functions to do this conversion.
 
-module Data.RLP (
+module Blockchain.Data.RLP (
   RLPObject(..),
   RLPSerializable(..),
   rlpSerialize,
@@ -22,7 +22,7 @@ import Data.Word
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
 import Numeric
 
-import Util
+import Blockchain.Data.Util
 
 -- | An internal representation of generic data, with no type information.
 --

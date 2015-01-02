@@ -10,7 +10,7 @@ import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit
 
-import Data.RLP
+import Blockchain.Data.RLP
 
 testNumber::Assertion
 testNumber = do

@@ -13,13 +13,13 @@ description:
 
 source-repository head
   type:     git
-  location: https://github.com/jamshidh/ethereum-merkle-patricia-db
+  location: https://github.com/jamshidh/ethereum-rlp
 
 source-repository this
   type:     git
-  location: https://github.com/jamshidh/ethereum-merkle-patricia-db
+  location: https://github.com/jamshidh/ethereum-rlp
   branch:   master
-  tag:      v0.0.2
+  tag:      v0.0.1
  
 library
     default-language: Haskell98
@@ -27,12 +27,11 @@ library
                    base >= 4 && < 5
                  , bytestring
                  , base16-bytestring
-                 , haskoin
                  , ansi-wl-pprint
     exposed-modules:
-                   Data.RLP
+                   Blockchain.Data.RLP
     other-modules:
-                   Util
+                   Blockchain.Data.Util
     ghc-options: -Wall
     buildable: True
     hs-source-dirs: src
@@ -45,9 +44,7 @@ Test-Suite test-rlp
     build-depends:      base >=4 && < 5
                     , bytestring
                     , base16-bytestring
-                    , haskoin
                     , ansi-wl-pprint
                     , test-framework
                     , test-framework-hunit
                     , HUnit
-                    , containers
