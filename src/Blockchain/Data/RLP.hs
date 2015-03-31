@@ -8,6 +8,7 @@
 module Blockchain.Data.RLP (
   RLPObject(..),
   RLPSerializable(..),
+  rlpSplit,
   rlpSerialize,
   rlpDeserialize
   ) where
@@ -46,8 +47,10 @@ instance Pretty RLPObject where
 
 
 splitAtWithError::Int->[a]->([a], [a])
-splitAtWithError n arr | n > length arr = error "splitAtWithError called with n > length arr"
-splitAtWithError n arr = splitAt n arr
+splitAtWithError 0 rest = ([], rest)
+splitAtWithError _ [] = error "splitAtWithError called with n > length arr"
+splitAtWithError n (first:rest) = (first:val, rest')
+  where (val, rest') = splitAt (n-1) rest
 
 getLength::Int->[Word8]->(Integer, [Word8])
 getLength sizeOfLength bytes = (bytes2Integer $ take sizeOfLength bytes, drop sizeOfLength bytes)
