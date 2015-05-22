@@ -44,8 +44,6 @@ instance Pretty RLPObject where
   pretty (RLPScalar n) = text $ "0x" ++ showHex n ""
   pretty (RLPString s) = text $ "0x" ++ BC.unpack (B16.encode $ BC.pack s)
 
-
-
 splitAtWithError::Int->[a]->([a], [a])
 splitAtWithError 0 rest = ([], rest)
 splitAtWithError _ [] = error "splitAtWithError called with n > length arr"
@@ -93,11 +91,12 @@ getRLPObjects theData = obj:getRLPObjects rest
     (obj, rest) = rlpSplit theData
 
 int2Bytes::Int->[Word8]
-int2Bytes val | val < 256 = [fromIntegral val]
-int2Bytes val | val < 65536 = 
-  map fromIntegral [0xFF .&. (val16 `shiftR` 8), 0xFF .&. val16]
-  where val16 = fromIntegral val::Word16
-int2Bytes _ = error "int2Bytes not defined for val > 65535."
+int2Bytes val | val < 0x100 = map (fromIntegral . (val `shiftR`)) [0]
+int2Bytes val | val < 0x10000 = map (fromIntegral . (val `shiftR`)) [8, 0]
+int2Bytes val | val < 0x1000000 = map (fromIntegral . (val `shiftR`)) [16,  8, 0]
+int2Bytes val | val < 0x100000000 = map (fromIntegral . (val `shiftR`)) [24, 16..0]
+int2Bytes val | val < 0x10000000000 = map (fromIntegral . (val `shiftR`)) [32, 24..0]
+int2Bytes _ = error "int2Bytes not defined for val >= 0x10000000000."
 
 rlp2Bytes::RLPObject->[Word8]
 rlp2Bytes (RLPScalar val) = [fromIntegral val]
