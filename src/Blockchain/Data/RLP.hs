@@ -153,3 +153,12 @@ instance RLPSerializable B.ByteString where
     rlpDecode (RLPScalar x) = B.singleton x
     rlpDecode (RLPString s) = BC.pack s
     rlpDecode x = error ("rlpDecode for ByteString not defined for: " ++ show x)
+
+{- Should be the same as the definition for Integers. Hopefully this doesn't break anything. -}
+instance RLPSerializable Int where
+  rlpEncode 0 = RLPString []
+  rlpEncode x | x < 128 = RLPScalar $ fromIntegral x
+  rlpEncode x = RLPString $ w2c <$> intg2Bytes x
+  rlpDecode (RLPScalar x) = fromIntegral x
+  rlpDecode (RLPString s) = byteString2Int $ BC.pack s
+  rlpDecode (RLPArray _) = error "rlpDecode called for Int for array"
