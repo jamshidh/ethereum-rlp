@@ -7,6 +7,7 @@
 
 module Blockchain.Data.RLP (
   RLPObject(..),
+  formatRLPObject,
   RLPSerializable(..),
   rlpSplit,
   rlpSerialize,
@@ -44,6 +45,9 @@ instance Pretty RLPObject where
   pretty (RLPScalar n) = text $ "0x" ++ showHex n ""
   pretty (RLPString s) = text $ "0x" ++ BC.unpack (B16.encode $ BC.pack s)
 
+formatRLPObject::RLPObject->String
+formatRLPObject = show . pretty
+                         
 splitAtWithError::Int->[a]->([a], [a])
 splitAtWithError 0 rest = ([], rest)
 splitAtWithError _ [] = error "splitAtWithError called with n > length arr"
