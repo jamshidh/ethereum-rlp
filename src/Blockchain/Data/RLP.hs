@@ -31,7 +31,7 @@ import Blockchain.Data.Util
 -- End users will not need to directly create objects of this type (an 'RLPObject' can be created using 'rlpEncode'),
 -- however the designer of a new type will need to create conversion code by making their type an instance 
 -- of the RLPSerializable class. 
-data RLPObject = RLPScalar Word8 | RLPString String | RLPArray [RLPObject] deriving (Show, Eq, Ord)
+data RLPObject = RLPScalar Word8 | RLPString B.ByteString | RLPArray [RLPObject] deriving (Show, Eq, Ord)
 
 -- | Converts objects to and from 'RLPObject's.
 class RLPSerializable a where
@@ -43,7 +43,7 @@ instance Pretty RLPObject where
   pretty (RLPArray objects) =
     encloseSep (text "[") (text "]") (text ", ") $ pretty <$> objects
   pretty (RLPScalar n) = text $ "0x" ++ showHex n ""
-  pretty (RLPString s) = text $ "0x" ++ BC.unpack (B16.encode $ BC.pack s)
+  pretty (RLPString s) = text $ "0x" ++ BC.unpack (B16.encode s)
 
 formatRLPObject::RLPObject->String
 formatRLPObject = show . pretty
@@ -75,12 +75,12 @@ rlpSplit (249:len1:len2:rest) =
     len = fromIntegral len1 `shift` 8 + fromIntegral len2
     (arrayData, nextRest) = splitAtWithError len rest
 rlpSplit (x:rest) | x >= 128 && x <= 128+55 =
-  (RLPString $ w2c <$> strList, nextRest)
+  (RLPString $ B.pack strList, nextRest)
   where
     strLength = x-128
     (strList, nextRest) = splitAtWithError (fromIntegral strLength) rest
 rlpSplit (x:rest) | x >= 0xB8 && x <= 0xBF =
-  (RLPString $ w2c <$> strList, nextRest)
+  (RLPString $ B.pack strList, nextRest)
   where
     (strLength, restAfterLen) = getLength (fromIntegral x - 0xB7) rest
     (strList, nextRest) = splitAtWithError (fromIntegral strLength) restAfterLen
@@ -104,11 +104,11 @@ int2Bytes _ = error "int2Bytes not defined for val >= 0x10000000000."
 
 rlp2Bytes::RLPObject->[Word8]
 rlp2Bytes (RLPScalar val) = [fromIntegral val]
-rlp2Bytes (RLPString s) | length s <= 55 = 0x80 + fromIntegral (length s):(c2w <$> s)
+rlp2Bytes (RLPString s) | B.length s <= 55 = 0x80 + fromIntegral (B.length s):B.unpack s
 rlp2Bytes (RLPString s) =
-  [0xB7 + fromIntegral (length lengthAsBytes)] ++ lengthAsBytes ++ (c2w <$> s)
+  [0xB7 + fromIntegral (length lengthAsBytes)] ++ lengthAsBytes ++ B.unpack s
   where
-    lengthAsBytes = int2Bytes $ length s
+    lengthAsBytes = int2Bytes $ B.length s
 rlp2Bytes (RLPArray innerObjects) =
   if length innerBytes <= 55
   then 0xC0 + fromIntegral (length innerBytes):innerBytes
@@ -137,23 +137,24 @@ rlpSerialize o = B.pack $ rlp2Bytes o
 
 
 instance RLPSerializable Integer where
-  rlpEncode 0 = RLPString []
+  rlpEncode 0 = RLPString B.empty
   rlpEncode x | x < 128 = RLPScalar $ fromIntegral x
-  rlpEncode x = RLPString $ w2c <$> integer2Bytes x
+  rlpEncode x = RLPString $ B.pack $ integer2Bytes x
   rlpDecode (RLPScalar x) = fromIntegral x
-  rlpDecode (RLPString s) = byteString2Integer $ BC.pack s
+  rlpDecode (RLPString s) = byteString2Integer s
   rlpDecode (RLPArray _) = error "rlpDecode called for Integer for array"
 
 instance RLPSerializable String where
-  rlpEncode [c] | c2w c < 128 = RLPScalar $ c2w c
-  rlpEncode s = RLPString s
-  rlpDecode (RLPString s) = s
+  rlpEncode s = rlpEncode $ BC.pack s
+
+  rlpDecode (RLPString s) = BC.unpack s
   rlpDecode (RLPScalar n) = [w2c $ fromIntegral n]
   rlpDecode (RLPArray x) = error $ "Malformed RLP in call to rlpDecode for String: RLPObject is an array: " ++ show (pretty x)
 
 instance RLPSerializable B.ByteString where
-    rlpEncode s = rlpEncode $ BC.unpack s
+    rlpEncode x | B.length x == 1 && B.head x < 128 = RLPScalar $ B.head x
+    rlpEncode s = RLPString s
       
     rlpDecode (RLPScalar x) = B.singleton x
-    rlpDecode (RLPString s) = BC.pack s
+    rlpDecode (RLPString s) = s
     rlpDecode x = error ("rlpDecode for ByteString not defined for: " ++ show x)
