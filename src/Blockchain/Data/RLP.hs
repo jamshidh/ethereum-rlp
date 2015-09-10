@@ -26,6 +26,8 @@ import Numeric
 
 import Blockchain.Data.Util
 
+import Debug.Trace
+
 -- | An internal representation of generic data, with no type information.
 --
 -- End users will not need to directly create objects of this type (an 'RLPObject' can be created using 'rlpEncode'),
@@ -47,49 +49,49 @@ instance Pretty RLPObject where
 
 formatRLPObject::RLPObject->String
 formatRLPObject = show . pretty
-                         
-splitAtWithError::Int->[a]->([a], [a])
-splitAtWithError 0 rest = ([], rest)
-splitAtWithError _ [] = error "splitAtWithError called with n > length arr"
-splitAtWithError n (first:rest) = (first:val, rest')
-  where (val, rest') = splitAt (n-1) rest
 
-getLength::Int->[Word8]->(Integer, [Word8])
-getLength sizeOfLength bytes = (bytes2Integer $ take sizeOfLength bytes, drop sizeOfLength bytes)
+splitAtWithError::Int->B.ByteString->(B.ByteString, B.ByteString)
+splitAtWithError i s | i > B.length s = error "splitAtWithError called with n > length arr"
+splitAtWithError i s = B.splitAt i s
 
-rlpSplit::[Word8]->(RLPObject, [Word8])
-rlpSplit (x:rest) | x >= 192 && x <= 192+55 =
-  (RLPArray $ getRLPObjects arrayData, nextRest)
-  where
-    dataLength::Word8
-    dataLength = x - 192
-    (arrayData, nextRest) = splitAtWithError (fromIntegral dataLength) rest
-rlpSplit (x:rest) | x >= 0xF8 && x <= 0xFF =
-  (RLPArray $ getRLPObjects arrayData, nextRest)
-  where
-    (arrLength, restAfterLen) = getLength (fromIntegral x - 0xF7) rest
-    (arrayData, nextRest) = splitAtWithError (fromIntegral arrLength) restAfterLen
-rlpSplit (249:len1:len2:rest) =
-  (RLPArray $ getRLPObjects arrayData, nextRest)
-  where
-    len = fromIntegral len1 `shift` 8 + fromIntegral len2
-    (arrayData, nextRest) = splitAtWithError len rest
-rlpSplit (x:rest) | x >= 128 && x <= 128+55 =
-  (RLPString $ B.pack strList, nextRest)
-  where
-    strLength = x-128
-    (strList, nextRest) = splitAtWithError (fromIntegral strLength) rest
-rlpSplit (x:rest) | x >= 0xB8 && x <= 0xBF =
-  (RLPString $ B.pack strList, nextRest)
-  where
-    (strLength, restAfterLen) = getLength (fromIntegral x - 0xB7) rest
-    (strList, nextRest) = splitAtWithError (fromIntegral strLength) restAfterLen
-rlpSplit (x:rest) | x < 128 =
-  (RLPScalar x, rest)
-rlpSplit x = error ("Missing case in rlpSplit: " ++ show (B.pack x))
+getLength::Int->B.ByteString->(Integer, B.ByteString)
+getLength sizeOfLength bytes =
+  (bytes2Integer $ B.unpack $ B.take sizeOfLength bytes, B.drop sizeOfLength bytes)
 
-getRLPObjects::[Word8]->[RLPObject]
-getRLPObjects [] = []
+rlpSplit::B.ByteString->(RLPObject, B.ByteString)
+rlpSplit input =
+  case B.head input of
+    x | x >= 192 && x <= 192+55 ->
+      let (arrayData, nextRest) =
+            splitAtWithError (fromIntegral $ x - 192) $ B.tail input
+      in (RLPArray $ getRLPObjects arrayData, nextRest)
+
+    x | x >= 0xF8 && x <= 0xFF ->
+      let 
+        (arrLength, restAfterLen) = getLength (fromIntegral x - 0xF7) $ B.tail input
+        (arrayData, nextRest) = splitAtWithError (fromIntegral arrLength) restAfterLen
+      in (RLPArray $ getRLPObjects arrayData, nextRest)
+
+    x | x >= 128 && x <= 128+55 ->
+      let
+        (strList, nextRest) = splitAtWithError (fromIntegral $ x - 128) $ B.tail input
+      in 
+       (RLPString strList, nextRest)
+
+    x | x >= 0xB8 && x <= 0xBF ->
+      let 
+        (strLength, restAfterLen) = getLength (fromIntegral x - 0xB7) $ B.tail input
+        (strList, nextRest) = splitAtWithError (fromIntegral strLength) restAfterLen
+      in
+       (RLPString strList, nextRest)
+
+    x | x < 128 -> (RLPScalar x, B.tail input)
+            
+    x -> error ("Missing case in rlpSplit: " ++ show x)
+
+    
+getRLPObjects::ByteString->[RLPObject]
+getRLPObjects x | B.null x = []
 getRLPObjects theData = obj:getRLPObjects rest
   where
     (obj, rest) = rlpSplit theData
@@ -124,8 +126,8 @@ rlp2Bytes (RLPArray innerObjects) =
 -- Full deserialization of an object can be obtained using @rlpDecode . rlpDeserialize@.
 rlpDeserialize::B.ByteString->RLPObject
 rlpDeserialize s = 
-  case rlpSplit $ B.unpack s of
-    (o, []) -> o
+  case rlpSplit s of
+    (o, x) | B.null x -> o
     _ -> error ("parse error converting ByteString to an RLP Object: " ++ show (B.unpack s))
 
 
