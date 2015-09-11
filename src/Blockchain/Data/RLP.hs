@@ -63,7 +63,7 @@ rlpSplit input =
   case B.head input of
     x | x >= 192 && x <= 192+55 ->
       let (arrayData, nextRest) =
-            splitAtWithError (fromIntegral $ x - 192) $ B.tail input
+            splitAtWithError (fromIntegral x - 192) $ B.tail input
       in (RLPArray $ getRLPObjects arrayData, nextRest)
 
     x | x >= 0xF8 && x <= 0xFF ->
