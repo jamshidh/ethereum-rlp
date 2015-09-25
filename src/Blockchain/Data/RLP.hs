@@ -26,8 +26,6 @@ import Numeric
 
 import Blockchain.Data.Util
 
-import Debug.Trace
-
 -- | An internal representation of generic data, with no type information.
 --
 -- End users will not need to directly create objects of this type (an 'RLPObject' can be created using 'rlpEncode'),
