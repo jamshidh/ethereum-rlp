@@ -19,7 +19,6 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Char8 as BC
 import Data.ByteString.Internal
-import Data.Functor
 import Data.Word
 import Text.PrettyPrint.ANSI.Leijen hiding ((<$>))
 import Numeric
