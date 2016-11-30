@@ -136,12 +136,13 @@ rlpSerialize o = B.pack $ rlp2Bytes o
 
 
 instance RLPSerializable Integer where
-  rlpEncode 0 = RLPString B.empty
-  rlpEncode x | x < 128 = RLPScalar $ fromIntegral x
-  rlpEncode x = RLPString $ B.pack $ integer2Bytes x
+  rlpEncode 0             = RLPString B.empty
+  rlpEncode x | x < 0     = error "cannot encode negative numbers in RLP"
+  rlpEncode x | x < 128   = RLPScalar $ fromIntegral x
+  rlpEncode x             = RLPString $ B.pack $ integer2Bytes x
   rlpDecode (RLPScalar x) = fromIntegral x
   rlpDecode (RLPString s) = byteString2Integer s
-  rlpDecode (RLPArray _) = error "rlpDecode called for Integer for array"
+  rlpDecode (RLPArray _)  = error "rlpDecode called for Integer for array"
 
 instance RLPSerializable String where
   rlpEncode s = rlpEncode $ BC.pack s
